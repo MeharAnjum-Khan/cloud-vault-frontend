@@ -1,65 +1,159 @@
-import Image from "next/image";
+/**
+ * =========================================================
+ * LANDING PAGE – CLOUDVAULT
+ * File: src/app/page.js
+ * =========================================================
+ * This is the MAIN homepage of the application (/).
+ *
+ * Purpose:
+ * - Introduce CloudVault
+ * - Explain what the product does
+ * - Guide users to Login or Signup
+ *
+ * This page does NOT handle authentication.
+ * It only redirects users to /login or /signup.
+ *
+ * Next.js App Router rule:
+ * - page.js inside /app becomes a route automatically
+ * =========================================================
+ */
 
-export default function Home() {
+import { Cloud } from "lucide-react";
+import Link from "next/link";
+
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="min-h-screen bg-slate-50 text-slate-800">
+      {/* =====================================================
+          NAVBAR
+          ===================================================== */}
+      <header className="flex items-center justify-between px-8 py-5">
+        {/* App Logo / Name */}
+       <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+          <Cloud className="w-7 h-7 text-blue-600" />
+              Cloud Vault
+       </h1>
+
+
+        {/* Auth Navigation */}
+        <nav className="flex gap-4">
+          <Link
+            href="/login"
+            className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Login
+          </Link>
+
+          <Link
+            href="/signup"
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700"
           >
-            Documentation
-          </a>
+            Sign Up
+          </Link>
+        </nav>
+      </header>
+
+      {/* =====================================================
+          HERO SECTION
+          ===================================================== */}
+      <section className="flex flex-col items-center text-center px-6 mt-20">
+        <h2 className="text-4xl font-bold max-w-3xl">
+          Secure cloud storage for your files, folders, and teams
+        </h2>
+
+        <p className="mt-4 text-lg text-slate-600 max-w-2xl">
+          Cloud Vault helps you store, organize, and share files securely —
+          with simple access control and a clean, reliable experience.
+        </p>
+
+        {/* Call to Action */}
+        <div className="mt-8 flex gap-4">
+          <Link
+            href="/signup"
+            className="px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+          >
+            Get Started Free
+          </Link>
+
+          <Link
+            href="/login"
+            className="px-6 py-3 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"
+          >
+            Sign In
+          </Link>
         </div>
-      </main>
-    </div>
+      </section>
+
+      {/* =====================================================
+          FEATURES SECTION
+          ===================================================== */}
+      <section className="mt-28 px-8 max-w-6xl mx-auto">
+        <h3 className="text-3xl font-semibold text-center">
+          Why choose Cloud Vault?
+        </h3>
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Feature 1 */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h4 className="text-lg font-semibold mb-2">
+              Secure Authentication
+            </h4>
+            <p className="text-slate-600 text-sm">
+              JWT-based authentication with encrypted passwords and
+              Google OAuth support.
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h4 className="text-lg font-semibold mb-2">
+              Organized File Storage
+            </h4>
+            <p className="text-slate-600 text-sm">
+              Upload, manage, and organize files into folders
+              with reliable cloud storage.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <h4 className="text-lg font-semibold mb-2">
+              Controlled Sharing
+            </h4>
+            <p className="text-slate-600 text-sm">
+              Share files securely with granular access control
+              built for individuals and teams.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FINAL CALL TO ACTION
+          ===================================================== */}
+      <section className="mt-32 bg-blue-50 py-20 text-center">
+        <h3 className="text-3xl font-bold">
+          Start organizing your files today
+        </h3>
+
+        <p className="mt-3 text-slate-600">
+          Simple. Secure. Reliable cloud storage.
+        </p>
+
+        <Link
+          href="/signup"
+          className="inline-block mt-6 px-8 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+        >
+          Create Your Account
+        </Link>
+      </section>
+
+      {/* =====================================================
+          FOOTER
+          ===================================================== */}
+      <footer className="py-8 text-center text-sm text-slate-500">
+        © {new Date().getFullYear()} Cloud Vault. All rights reserved.
+      </footer>
+    </main>
   );
 }
