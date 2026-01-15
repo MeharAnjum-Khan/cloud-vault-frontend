@@ -17,7 +17,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signupUser } from "@/utils/api";
+import { signupUser } from "@/lib/api";
+
 
 export default function SignupPage() {
   const router = useRouter();

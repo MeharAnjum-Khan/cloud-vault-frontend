@@ -51,7 +51,7 @@ const handleResponse = async (response) => {
    Called when user registers using email & password
 ---------------------------------------------------------- */
 export const signupUser = async (userData) => {
-  const response = await fetch(`${BASE_URL}/api/auth/signup`, {
+  const response = await fetch(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
