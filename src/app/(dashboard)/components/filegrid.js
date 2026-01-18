@@ -15,25 +15,32 @@
 
 "use client";
 
-// Import single file UI component
 import File from "./file";
 
-const FileGrid = ({ files }) => {
-  /**
-   * `files` is an array coming from FileList
-   * Example:
-   * [
-   *   { id, name, mime_type, size_bytes, ... },
-   *   ...
-   * ]
-   */
-
+const FileGrid = ({ folders, files, onNavigate, onDelete, onRename, onRestore, isTrash }) => {
   return (
     <div className="grid grid-cols-1 gap-3">
+      {folders.map((folder) => (
+        <File
+          key={`folder-${folder.id}`}
+          item={{ ...folder, type: "folder" }}
+          onNavigate={onNavigate}
+          onDelete={onDelete}
+          onRename={onRename}
+          onRestore={onRestore}
+          isTrash={isTrash}
+        />
+      ))}
+
       {files.map((file) => (
         <File
-          key={file.id}   // React needs a unique key
-          file={file}     // Passing single file to File component
+          key={`file-${file.id}`}
+          item={{ ...file, type: "file" }}
+          onNavigate={onNavigate}
+          onDelete={onDelete}
+          onRename={onRename}
+          onRestore={onRestore}
+          isTrash={isTrash}
         />
       ))}
     </div>

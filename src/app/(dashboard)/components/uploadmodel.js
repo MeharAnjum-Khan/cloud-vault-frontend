@@ -5,7 +5,7 @@
 import { useState } from "react";
 import api from "@/lib/api"; // ✅ ADDED: centralized API import
 
-export default function UploadModel({ isOpen, onClose }) {
+export default function UploadModel({ isOpen, onClose, folderId }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [successMessage, setSuccessMessage] = useState(""); // ✅ ADDED
 
@@ -20,6 +20,11 @@ export default function UploadModel({ isOpen, onClose }) {
     const formData = new FormData();
     formData.append("file", selectedFile);
 
+    // ✅ PASS FOLDER ID IF EXISTS
+    if (folderId) {
+      formData.append("folder_id", folderId);
+    }
+
     try {
       /* ✅ FIX: Use api.upload ensuring headers are sent */
       const data = await api.upload("/upload", formData);
@@ -28,6 +33,11 @@ export default function UploadModel({ isOpen, onClose }) {
 
       setSuccessMessage("File uploaded successfully ✅"); // ✅ ADDED
       setSelectedFile(null); // ✅ ADDED (reset)
+
+      // ✅ Refresh page to show new file (since TopBar is outside page context)
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
 
     } catch (error) {
       console.error("Upload failed:", error);

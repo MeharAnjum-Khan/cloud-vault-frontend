@@ -16,42 +16,65 @@
 
 "use client";
 
-const File = ({ file }) => {
-  /**
-   * `file` object comes from backend
-   * Example:
-   * {
-   *   id,
-   *   name,
-   *   mime_type,
-   *   size_bytes,
-   *   created_at
-   * }
-   */
+const File = ({ item, onNavigate, onDelete, onRename, onRestore, isTrash }) => {
+  const isFolder = item.type === "folder";
+
+  const handleWrapperClick = () => {
+    if (isFolder && !isTrash && onNavigate) {
+      onNavigate(item);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg bg-white hover:bg-slate-50 transition">
-      {/* ===============================
-          FILE INFO
-         =============================== */}
-      <div className="flex flex-col">
-        {/* File name */}
-        <span className="font-medium text-slate-800">
-          {file.name}
-        </span>
+    <div
+      className={`flex items-center justify-between p-4 border rounded-lg bg-white hover:bg-slate-50 transition cursor-pointer`}
+      onClick={handleWrapperClick}
+    >
+      <div className="flex items-center gap-4">
+        <div className="text-2xl">
+          {isFolder ? "📁" : "📄"}
+        </div>
 
-        {/* File meta info */}
-        <span className="text-sm text-slate-500">
-          {file.mime_type} • {(file.size_bytes / 1024).toFixed(2)} KB
-        </span>
+        <div className="flex flex-col">
+          <span className="font-medium text-slate-800">
+            {item.name}
+          </span>
+          <span className="text-sm text-slate-500">
+            {isFolder
+              ? "Folder"
+              : `${item.mime_type || 'File'} • ${(item.size_bytes / 1024).toFixed(2)} KB`
+            }
+          </span>
+        </div>
       </div>
 
-      {/* ===============================
-          PLACEHOLDER FOR ACTIONS
-          (Download / Delete later)
-         =============================== */}
-      <div className="text-sm text-slate-400">
-        {/* Actions will be added in later days */}
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        {isTrash ? (
+          <button
+            onClick={() => onRestore(item, item.type)}
+            className="p-2 text-green-600 hover:bg-green-50 rounded"
+            title="Restore"
+          >
+            Restore
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => onRename(item)}
+              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+              title="Rename"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={() => onDelete(item, item.type)}
+              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
+              title="Delete"
+            >
+              🗑️
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -58,6 +58,23 @@ const api = {
     return handleResponse(response);
   },
 
+  /* ✅ ADDED: Generic POST Helper */
+  post: async (endpoint, body) => {
+    const token = localStorage.getItem("token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    return handleResponse(response);
+  },
+
   /* ✅ ADDED: Generic Upload Helper */
   upload: async (endpoint, formData) => {
     const token = localStorage.getItem("token"); //get the ID token from local storage
@@ -75,6 +92,36 @@ const api = {
       method: "POST",
       headers,
       body: formData,
+    });
+
+    return handleResponse(response);
+  },
+
+  /* ✅ ADDED: Generic PUT Helper */
+  put: async (endpoint, body) => {
+    const token = localStorage.getItem("token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    return handleResponse(response);
+  },
+
+  /* ✅ ADDED: Generic DELETE Helper */
+  del: async (endpoint) => {
+    const token = localStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, {
+      method: "DELETE",
+      headers,
     });
 
     return handleResponse(response);
