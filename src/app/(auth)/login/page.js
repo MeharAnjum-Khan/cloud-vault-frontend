@@ -20,7 +20,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/lib/api";
 
-
 export default function LoginPage() {
   const router = useRouter();
 
@@ -48,8 +47,11 @@ export default function LoginPage() {
       // Call backend login API
       const data = await loginUser({ email, password });
 
-      // Save JWT token in browser storage
-      localStorage.setItem("cloudvault_token", data.token);
+      /* =====================================================
+         ✅ FIXED: Store token using the SAME key
+         that api.js expects ("token")
+         ===================================================== */
+      localStorage.setItem("token", data.token);
 
       // Redirect user (dashboard will be created later)
       router.push("/dashboard");

@@ -19,25 +19,16 @@
  */
 
 /* ---------------------------------------------------------
-   BACKEND BASE URL
-   ---------------------------------------------------------
-   This is your backend server URL.
-   If your backend runs on a different port or domain later,
-   you ONLY change it here.
+   BACKEND BASE URL:
 ---------------------------------------------------------- */
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 /* ---------------------------------------------------------
    HELPER FUNCTION: Handle API responses
-   ---------------------------------------------------------
-   This function:
-   - Converts response to JSON
-   - Handles backend errors gracefully
 ---------------------------------------------------------- */
 const handleResponse = async (response) => {
   const data = await response.json();
 
-  // If backend sends error (status not 2xx)
   if (!response.ok) {
     throw new Error(data.message || "Something went wrong");
   }
@@ -45,10 +36,55 @@ const handleResponse = async (response) => {
   return data;
 };
 
+/* =========================================================
+   ✅ GENERIC API HELPER (DEFAULT EXPORT)
+========================================================= */
+const api = {
+  get: async (endpoint) => {
+    const token = localStorage.getItem("token");
+
+    /* ✅ FIX ADDED:
+       Only attach Authorization header if token exists.
+       Prevents sending `Bearer null` which caused "Invalid token".
+    */
+    const headers = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, {
+      headers,
+    });
+
+    return handleResponse(response);
+  },
+
+  /* ✅ ADDED: Generic Upload Helper */
+  upload: async (endpoint, formData) => {
+    const token = localStorage.getItem("token"); //get the ID token from local storage
+
+    // Only attach Authorization header if token exists
+    const headers = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+
+    // Note: Content-Type is NOT set here because fetch automatically
+    // sets it to multipart/form-data with boundary when body is FormData
+
+    //send the file to the backend with the headers
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    return handleResponse(response);
+  },
+};
+
+export default api;
+
 /* ---------------------------------------------------------
    SIGNUP API
-   ---------------------------------------------------------
-   Called when user registers using email & password
 ---------------------------------------------------------- */
 export const signupUser = async (userData) => {
   const response = await fetch(`${BASE_URL}/api/auth/register`, {
@@ -64,8 +100,6 @@ export const signupUser = async (userData) => {
 
 /* ---------------------------------------------------------
    LOGIN API
-   ---------------------------------------------------------
-   Called when user logs in using email & password
 ---------------------------------------------------------- */
 export const loginUser = async (credentials) => {
   const response = await fetch(`${BASE_URL}/api/auth/login`, {
@@ -81,9 +115,6 @@ export const loginUser = async (credentials) => {
 
 /* ---------------------------------------------------------
    GOOGLE LOGIN API
-   ---------------------------------------------------------
-   Called after Google OAuth authentication is completed
-   on the frontend and we send the Google token to backend
 ---------------------------------------------------------- */
 export const googleLogin = async (googleToken) => {
   const response = await fetch(`${BASE_URL}/api/auth/google`, {
