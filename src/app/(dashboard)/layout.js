@@ -14,63 +14,59 @@
 // This file is responsible ONLY for layout,
 // not business logic.
 
-import "../globals.css";           // Global styles (Tailwind, base styles)
+"use client";
+
+import React, { useState, createContext } from "react";
+import "../globals.css";                   // Global styles (Tailwind, base styles)
 import Sidebar from "./components/sidebar"; // Sidebar extracted into reusable component
 import TopBar from "./components/topbar";
 
+/* =====================================================
+   Day 6: Search Context
+   Allows any dashboard component to access searchQuery
+   ===================================================== */
+export const SearchContext = createContext("");
 
 export default function DashboardLayout({ children }) {
+  // Holds current search query typed in TopBar
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
-    // Root container
-    // - flex: horizontal layout
-    // - h-screen: full viewport height
-    // - bg-slate-50: light dashboard background
-    <div className="flex h-screen bg-slate-50">
+    /* =====================================================
+       Day 6:
+       Wrap dashboard with SearchContext provider
+       ===================================================== */
+    <SearchContext.Provider value={searchQuery}>
+      <div className="flex h-screen bg-slate-50">
 
-      {/* =====================================================
-          SIDEBAR
-          =====================================================
-          Contains:
-          - App logo & name
-          - Navigation buttons
-          - Logout button
-          Implemented as a separate component
-      */}
-      <Sidebar />
+        {/* =====================================================
+            SIDEBAR
+            ===================================================== */}
+        <Sidebar />
 
-      {/* =====================================================
-          MAIN CONTENT AREA
-          =====================================================
-          This section contains:
-          - Top bar (header)
-          - Dynamic page content (children)
-      */}
-      <div className="flex-1 flex flex-col">
+        {/* =====================================================
+            MAIN CONTENT AREA
+            ===================================================== */}
+        <div className="flex-1 flex flex-col">
 
-        {/* -----------------------------------------------------
-            TOP BAR
-            -----------------------------------------------------
-            Appears at the top of every dashboard page.
-            Later can include:
-            - Search bar
-            - User profile menu
-        */}
-        <TopBar />
-       
+          {/* -----------------------------------------------------
+              TOP BAR
+              ----------------------------------------------------- */}
+          <TopBar onSearch={setSearchQuery} />
 
-        {/* -----------------------------------------------------
-            PAGE CONTENT
-            -----------------------------------------------------
-            This is where individual dashboard pages render:
-            - Files list
-            - Folder views
-            - Trash
-        */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+          {/* -----------------------------------------------------
+              PAGE CONTENT
+              -----------------------------------------------------
+              Day 6:
+              Inject searchQuery into dashboard pages so FileList
+              can trigger backend full-text search.
+          */}
+          <main className="flex-1 overflow-y-auto p-6">
+            {React.cloneElement(children, { searchQuery })}
+          </main>
 
+        </div>
       </div>
-    </div>
+    </SearchContext.Provider>
   );
 }

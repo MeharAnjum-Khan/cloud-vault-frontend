@@ -19,27 +19,46 @@ import FileGrid from "./filegrid";
 import RenameModal from "./renamemodal";
 
 
-const FileList = ({ folderId = null, isTrash = false, onNavigate, refreshTrigger }) => {
+const FileList = ({
+  folderId = null,
+  isTrash = false,
+  onNavigate,
+  refreshTrigger,
+  searchQuery = "" // ✅ added (Day 6)
+}) => {
   const [items, setItems] = useState({ folders: [], files: [] });
   const [loading, setLoading] = useState(true);
   const [renameItem, setRenameItem] = useState(null);
-  
+
+  // Pagination (Day 6)
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams();
-      if (folderId) query.append("folderId", folderId); // backend expects folderId for files
-      if (folderId) query.append("parentId", folderId); // backend expects parentId for folders
+      if (folderId) query.append("folderId", folderId);
+      if (folderId) query.append("parentId", folderId);
       if (isTrash) query.append("trash", "true");
 
+      // Pagination params
+      query.append("page", page);
+      query.append("limit", limit);
+
+      // 🔍 FILES API
+      const filesEndpoint = searchQuery
+        ? `/search?q=${searchQuery}&${query.toString()}`
+        : `/files?${query.toString()}`;
+
       const [filesRes, foldersRes] = await Promise.all([
-        api.get(`/files?${query.toString()}`),
+        api.get(filesEndpoint),
         api.get(`/folders?${query.toString()}`)
       ]);
 
       setItems({
-        files: filesRes.files,
+        files: filesRes.files || filesRes, // supports both old & new response shapes
         folders: foldersRes.folders
       });
     } catch (error) {
@@ -47,11 +66,13 @@ const FileList = ({ folderId = null, isTrash = false, onNavigate, refreshTrigger
     } finally {
       setLoading(false);
     }
-  }, [folderId, isTrash]);
+  }, [folderId, isTrash, searchQuery, page]);
 
   useEffect(() => {
+    // Reset pagination when search changes
+    setPage(1);
     fetchItems();
-  }, [fetchItems, refreshTrigger]);
+  }, [fetchItems, searchQuery]);
 
   const handleRename = async () => {
     fetchItems();
@@ -62,11 +83,7 @@ const FileList = ({ folderId = null, isTrash = false, onNavigate, refreshTrigger
     if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
     try {
       const endpoint = type === "folder" ? `/folders/${item.id}` : `/files/${item.id}`;
-      // For trash, we might want permanent delete or restore logic here, but for now assuming soft delete from main view
-      if (isTrash) {
-        // If in trash, delete means permanent delete (if implemented) or we can add restore button
-        // For now let's implement RESTORE as primary action in trash
-      } else {
+      if (!isTrash) {
         await api.del(endpoint);
       }
       fetchItems();
@@ -77,16 +94,15 @@ const FileList = ({ folderId = null, isTrash = false, onNavigate, refreshTrigger
 
   const handleRestore = async (item, type) => {
     try {
-      const endpoint = type === "folder" ? `/folders/${item.id}/restore` : `/files/${item.id}/restore`;
+      const endpoint = type === "folder"
+        ? `/folders/${item.id}/restore`
+        : `/files/${item.id}/restore`;
       await api.put(endpoint, {});
       fetchItems();
     } catch (error) {
       alert(error.message);
     }
   };
-
-  // Sort: Folders first, then Files
-  // ... actually specific sorting might be needed but let's just pass them
 
   if (loading) {
     return (

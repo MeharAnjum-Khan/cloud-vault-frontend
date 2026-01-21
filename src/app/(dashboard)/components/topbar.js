@@ -5,7 +5,7 @@
  TopBar for dashboard pages.
  Displays:
  - Page title
- - Search input (UI only)
+ - Search input
  - Upload button
  - User avatar placeholder
 */
@@ -13,14 +13,33 @@
 import { useState } from "react";
 import UploadModel from "./uploadmodel";
 
-export default function TopBar() {
+export default function TopBar({ onSearch }) {
   // Controls upload modal visibility
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+
+  // ===============================
+  // Day 6: Search input local state
+  // ===============================
+  const [searchText, setSearchText] = useState("");
+
+  // Called whenever user types in search bar
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchText(value);
+    onSearch(value); // send search text upward
+  };
+
+  // Optional: handle Enter key (UX consistency)
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      onSearch(searchText);
+    }
+  };
 
   return (
     <>
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-        
+
         {/* Left: Page title */}
         <h2 className="text-lg font-medium text-slate-800">
           My Drive
@@ -31,7 +50,10 @@ export default function TopBar() {
           <input
             type="text"
             placeholder="Search in CloudVault"
-            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={searchText}
+            onChange={handleSearchChange}   // Day 6
+            onKeyDown={handleKeyDown}       // Day 6
+            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -58,4 +80,3 @@ export default function TopBar() {
     </>
   );
 }
-
