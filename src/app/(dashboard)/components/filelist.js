@@ -18,10 +18,12 @@ import api from "@/lib/api";
 import FileGrid from "./filegrid";
 import RenameModal from "./renamemodal";
 
+
 const FileList = ({ folderId = null, isTrash = false, onNavigate, refreshTrigger }) => {
   const [items, setItems] = useState({ folders: [], files: [] });
   const [loading, setLoading] = useState(true);
   const [renameItem, setRenameItem] = useState(null);
+  
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
