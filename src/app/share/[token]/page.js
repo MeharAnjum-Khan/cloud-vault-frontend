@@ -34,7 +34,7 @@ const SharePage = ({ params }) => {
         // - file info
         // - signed URL for download/view
         setfile(response.file);
-        setsignedurl(response.signedurl);
+        setsignedurl(response.downloadUrl); // ✅ FIX: Use correct key from backend
         setpermission(response.permission); // updated API response handling
       } catch (err) {
         // Handles invalid / expired token

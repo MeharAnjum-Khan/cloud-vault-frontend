@@ -11,9 +11,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FileList from "../components/filelist";
 import FolderCreateModal from "../components/foldercreatemodal";
+import { useFolder } from "../context/FolderContext"; // ✅ ADDED
 
 /* =====================================================
    Day 6:
@@ -33,6 +34,15 @@ export default function DashboardPage({ searchQuery }) {
 
   // Controls whether the "Create Folder" modal is open or closed
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+
+  const { setCurrentFolderId } = useFolder() || {}; // ✅ ADDED
+
+  // ✅ SYNC CONTEXT WHEN FOLDER CHANGES
+  useEffect(() => {
+    if (setCurrentFolderId) {
+      setCurrentFolderId(currentFolder?.id || null);
+    }
+  }, [currentFolder, setCurrentFolderId]);
 
   // Called when user clicks a folder to enter it
   const handleNavigate = (folder) => {

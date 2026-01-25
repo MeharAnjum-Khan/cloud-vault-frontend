@@ -43,7 +43,7 @@ const File = ({ item, onNavigate, onDelete, onRename, onRestore, isTrash }) => {
             <span className="text-sm text-slate-500">
               {isFolder
                 ? "Folder"
-                : `${item.mime_type || "File"} • ${(item.size_bytes / 1024).toFixed(2)} KB`
+                : `${(item.size_bytes / 1024).toFixed(2)} KB`
               }
             </span>
           </div>

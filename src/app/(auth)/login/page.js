@@ -20,6 +20,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/lib/api";
 
+/* =====================================================
+   ✅ ADDED: Standard eye icons for show / hide password
+   ===================================================== */
+import { Eye, EyeOff } from "lucide-react";
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -28,6 +33,11 @@ export default function LoginPage() {
   // -------------------------------
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  /* =====================================================
+     ✅ ADDED: UI state to toggle password visibility
+     ===================================================== */
+  const [showPassword, setShowPassword] = useState(false);
 
   // -------------------------------
   // UI state
@@ -103,14 +113,32 @@ export default function LoginPage() {
             <label className="mb-1 block text-sm text-slate-400">
               Password
             </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="••••••••"
-            />
+
+            {/* =====================================================
+               ✅ UPDATED: Password field with standard eye toggle
+               ===================================================== */}
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="••••••••"
+              />
+
+              {/* =====================================================
+                 ✅ ADDED: Standard eye / eye-off icon button
+                 ===================================================== */}
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {/* Submit button */}

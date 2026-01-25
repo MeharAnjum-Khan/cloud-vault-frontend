@@ -15,11 +15,17 @@
 */
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
 
   // Helper to check active route
   const isActive = (path) => pathname === path;
@@ -49,33 +55,30 @@ export default function Sidebar() {
       <nav className="flex-1 px-4 py-6 space-y-2">
         <Link
           href="/dashboard"
-          className={`block px-4 py-2 rounded-lg transition ${
-            isActive("/dashboard")
+          className={`block px-4 py-2 rounded-lg transition ${isActive("/dashboard")
               ? "bg-blue-50 text-blue-600 font-medium"
               : "text-slate-700 hover:bg-slate-100"
-          }`}
+            }`}
         >
           My Files
         </Link>
 
         <Link
           href="/dashboard/shared"
-          className={`block px-4 py-2 rounded-lg transition ${
-            isActive("/dashboard/shared")
+          className={`block px-4 py-2 rounded-lg transition ${isActive("/dashboard/shared")
               ? "bg-blue-50 text-blue-600 font-medium"
               : "text-slate-700 hover:bg-slate-100"
-          }`}
+            }`}
         >
           Shared
         </Link>
 
         <Link
           href="/dashboard/trash"
-          className={`block px-4 py-2 rounded-lg transition ${
-            isActive("/dashboard/trash")
+          className={`block px-4 py-2 rounded-lg transition ${isActive("/dashboard/trash")
               ? "bg-blue-50 text-blue-600 font-medium"
               : "text-slate-700 hover:bg-slate-100"
-          }`}
+            }`}
         >
           Trash
         </Link>
@@ -83,7 +86,10 @@ export default function Sidebar() {
 
       {/* Logout section */}
       <div className="p-4 border-t border-slate-200">
-        <button className="w-full px-4 py-2 text-sm rounded-lg text-red-600 hover:bg-red-50">
+        <button
+          onClick={handleLogout}
+          className="w-full px-4 py-2 text-sm rounded-lg text-red-600 hover:bg-red-50"
+        >
           Logout
         </button>
       </div>

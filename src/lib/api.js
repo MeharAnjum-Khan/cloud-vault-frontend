@@ -21,7 +21,7 @@
 /* ---------------------------------------------------------
    BACKEND BASE URL:
 ---------------------------------------------------------- */
-const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8080";
 
 /* ---------------------------------------------------------
    HELPER FUNCTION: Handle API responses
@@ -30,7 +30,7 @@ const handleResponse = async (response) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Something went wrong");
+    throw new Error(data.error || data.message || "Something went wrong");
   }
 
   return data;

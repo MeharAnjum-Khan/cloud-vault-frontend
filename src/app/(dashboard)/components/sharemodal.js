@@ -19,7 +19,7 @@ const ShareModal = ({ file, onclose }) => {
       });
 
       setsharelink(
-        response.sharelink.replace("undefined", window.location.origin)
+        response.shareLink.replace("undefined", window.location.origin)
       );
     } catch (error) {
       alert(error.message || "failed to create share link");
@@ -28,9 +28,13 @@ const ShareModal = ({ file, onclose }) => {
     }
   };
 
-  const copylink = () => {
-    navigator.clipboard.writeText(sharelink);
-    alert("link copied");
+  const copylink = async () => {
+    try {
+      await navigator.clipboard.writeText(sharelink);
+      alert("link copied");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   return (

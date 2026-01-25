@@ -20,6 +20,7 @@ import React, { useState, createContext } from "react";
 import "../globals.css";                   // Global styles (Tailwind, base styles)
 import Sidebar from "./components/sidebar"; // Sidebar extracted into reusable component
 import TopBar from "./components/topbar";
+import { FolderProvider } from "./context/FolderContext"; // ✅ ADDED
 
 /* =====================================================
    Day 6: Search Context
@@ -37,36 +38,38 @@ export default function DashboardLayout({ children }) {
        Wrap dashboard with SearchContext provider
        ===================================================== */
     <SearchContext.Provider value={searchQuery}>
-      <div className="flex h-screen bg-slate-50">
+      <FolderProvider> {/* ✅ ADDED: Wrap with Folder Provider */}
+        <div className="flex h-screen bg-slate-50">
 
-        {/* =====================================================
+          {/* =====================================================
             SIDEBAR
             ===================================================== */}
-        <Sidebar />
+          <Sidebar />
 
-        {/* =====================================================
+          {/* =====================================================
             MAIN CONTENT AREA
             ===================================================== */}
-        <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col">
 
-          {/* -----------------------------------------------------
+            {/* -----------------------------------------------------
               TOP BAR
               ----------------------------------------------------- */}
-          <TopBar onSearch={setSearchQuery} />
+            <TopBar onSearch={setSearchQuery} />
 
-          {/* -----------------------------------------------------
+            {/* -----------------------------------------------------
               PAGE CONTENT
               -----------------------------------------------------
               Day 6:
               Inject searchQuery into dashboard pages so FileList
               can trigger backend full-text search.
           */}
-          <main className="flex-1 overflow-y-auto p-6">
-            {React.cloneElement(children, { searchQuery })}
-          </main>
+            <main className="flex-1 overflow-y-auto p-6">
+              {React.cloneElement(children, { searchQuery })}
+            </main>
 
+          </div>
         </div>
-      </div>
+      </FolderProvider>
     </SearchContext.Provider>
   );
 }
