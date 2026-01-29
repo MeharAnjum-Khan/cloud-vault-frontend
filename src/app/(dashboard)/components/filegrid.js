@@ -2,24 +2,18 @@
 
 /**
  * PURPOSE:
- * This component is responsible for displaying
- * a COLLECTION of files in a grid or list layout.
- *
- * In very simple terms:
- * - Receives an array of files as props
- * - Loops through the files
- * - Uses <File /> component to render each file
- *
- * This keeps UI clean and modular.
+ * Google Drive-style grid layout for files and folders
+ * - Responsive grid (1-6 columns based on screen size)
+ * - Card-based display
  */
 
 "use client";
 
 import File from "./file";
 
-const FileGrid = ({ folders, files, onNavigate, onDelete, onRename, onRestore, isTrash }) => {
+const FileGrid = ({ folders, files, onNavigate, onDelete, onRename, onRestore, isTrash, onPreview }) => {
   return (
-    <div className="grid grid-cols-1 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       {folders.map((folder) => (
         <File
           key={`folder-${folder.id}`}
@@ -41,6 +35,7 @@ const FileGrid = ({ folders, files, onNavigate, onDelete, onRename, onRestore, i
           onRename={onRename}
           onRestore={onRestore}
           isTrash={isTrash}
+          onPreview={onPreview}
         />
       ))}
     </div>

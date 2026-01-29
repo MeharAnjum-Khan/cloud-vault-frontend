@@ -7,11 +7,12 @@ export default function RenameModal({ isOpen, onClose, onRenamed, item }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (item) {
-            setNewName(item.name);
-        }
-    }, [item]);
+    // ✅ Sync local state with prop when item changes (Better than useEffect)
+    const [prevItem, setPrevItem] = useState(null);
+    if (item !== prevItem) {
+        setPrevItem(item);
+        setNewName(item?.name || "");
+    }
 
     if (!isOpen || !item) return null;
 

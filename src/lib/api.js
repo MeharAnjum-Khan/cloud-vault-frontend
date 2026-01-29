@@ -1,3 +1,5 @@
+// src/lib/api.js
+
 /**
  * =========================================================
  * PURPOSE OF THIS FILE
@@ -59,11 +61,54 @@ const api = {
   },
 
   /* ✅ ADDED: Generic POST Helper */
-  post: async (endpoint, body) => {
+  /* UPDATED: Now supports options for headers and progress events */
+  post: async (endpoint, body, options = {}) => {
     const token = localStorage.getItem("token");
+
+    /* ✅ FIX FOR FILE UPLOAD PROGRESS:
+       Standard 'fetch' does not support upload progress tracking.
+       If 'onUploadProgress' is passed in options (from FileList.js),
+       we switch to XMLHttpRequest (XHR) to support the progress bar.
+    */
+    if (options.onUploadProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${BASE_URL}/api${endpoint}`);
+
+        // Attach Auth Token
+        if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+        // Track Progress
+        xhr.upload.onprogress = options.onUploadProgress;
+
+        // Handle Response
+        xhr.onload = () => {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(response);
+            } else {
+              reject(new Error(response.message || response.error || "Upload failed"));
+            }
+          } catch (e) {
+            reject(new Error("Invalid server response"));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network Error"));
+
+        // Send FormData directly (Browser sets Content-Type + boundary automatically)
+        xhr.send(body);
+      });
+    }
+
+    /* ✅ STANDARD JSON POST REQUEST (Existing Logic):
+       If no progress tracking is needed, we use the standard fetch.
+    */
     const headers = {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}) // Allow merging custom headers
     };
 
     const response = await fetch(`${BASE_URL}/api${endpoint}`, {
