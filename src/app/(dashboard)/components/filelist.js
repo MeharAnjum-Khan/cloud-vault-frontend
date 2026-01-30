@@ -13,12 +13,20 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import FileGrid from "./filegrid";
 import RenameModal from "./renamemodal";
-import FilePreviewModal from "./filepreviewmodal"; // ✅ Component for Previews
+import FilePreviewModal from "./filepreviewmodal";
+import {
+  CloudUpload,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  X
+} from "lucide-react";
+import { useUpload } from "../context/UploadContext"; // ✅ ADDED
 
 const FileList = ({
   folderId = null,
@@ -37,21 +45,29 @@ const FileList = ({
   // ✅ State for File Preview
   const [previewFile, setPreviewFile] = useState(null);
 
-  // ✅ State for Drag-and-Drop & Uploads
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadQueue, setUploadQueue] = useState([]);
+  // ✅ Use Upload Context for Drag-and-Drop & Uploads
+  const { uploadFiles, isDragging, uploadQueue, refreshTrigger: globalRefreshTrigger } = useUpload();
 
   // Pagination
   const [page, setPage] = useState(1);
   const limit = 20;
+  const [hasMore, setHasMore] = useState(false);
+  const observerTarget = useRef(null);
 
   const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
-  if (searchQuery !== prevSearchQuery) {
-    setPrevSearchQuery(searchQuery);
-    setPage(1);
-  }
+  const [prevFolderId, setPrevFolderId] = useState(folderId);
 
-  const fetchItems = useCallback(async () => {
+  // Reset when filter changes
+  useEffect(() => {
+    if (searchQuery !== prevSearchQuery || folderId !== prevFolderId) {
+      setPrevSearchQuery(searchQuery);
+      setPrevFolderId(folderId);
+      setPage(1);
+      setItems({ folders: [], files: [] });
+    }
+  }, [searchQuery, folderId, prevSearchQuery, prevFolderId]);
+
+  const fetchItems = useCallback(async (isLoadMore = false) => {
     setLoading(true);
     try {
       const query = new URLSearchParams();
@@ -68,15 +84,22 @@ const FileList = ({
 
       const [filesRes, foldersRes] = await Promise.all([
         api.get(filesEndpoint),
-        searchQuery
-          ? Promise.resolve({ folders: [] })
-          : api.get(`/folders?${query.toString()}`)
+        // Folders are only fetched on the first page or when not searching
+        (!isLoadMore && !searchQuery)
+          ? api.get(`/folders?${query.toString()}`)
+          : Promise.resolve({ folders: [] })
       ]);
 
-      setItems({
-        files: filesRes.files || filesRes,
-        folders: foldersRes.folders
-      });
+      const newFiles = filesRes.files || filesRes;
+      const pagination = filesRes.pagination;
+
+      setItems(prev => ({
+        files: isLoadMore ? [...prev.files, ...newFiles] : newFiles,
+        folders: isLoadMore ? prev.folders : (foldersRes.folders || [])
+      }));
+
+      setHasMore(pagination?.hasMore || false);
+
     } catch (error) {
       console.error("Failed to fetch items:", error);
     } finally {
@@ -85,91 +108,37 @@ const FileList = ({
   }, [folderId, isTrash, searchQuery, page]);
 
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems, searchQuery, refreshTrigger]);
+    fetchItems(page > 1);
+  }, [fetchItems, searchQuery, refreshTrigger, globalRefreshTrigger, page]); // ✅ Use both local and global refresh
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setPage(prev => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, loading]);
 
   /* ========================================================
      ✅ Drag-and-Drop Handlers (Professional & Reliable)
      ======================================================== */
-  useEffect(() => {
-    const handleWindowDragOver = (e) => {
-      e.preventDefault();
-      if (!isTrash) setIsDragging(true);
-    };
+  // Removed local drag/drop event listeners as they are now handled by the UploadContext
 
-    const handleWindowDrop = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener("dragover", handleWindowDragOver);
-    window.addEventListener("drop", handleWindowDrop);
-
-    return () => {
-      window.removeEventListener("dragover", handleWindowDragOver);
-      window.removeEventListener("drop", handleWindowDrop);
-    };
-  }, [isTrash]);
-
-  const handleDragLeave = (e) => {
-    // Only turn off if we leave the main window
-    if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
-      setIsDragging(false);
-    }
-  };
-
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      console.log("Files dropped:", files.length);
-      await handleFileUpload(files);
-    }
-  };
-
-  const handleFileUpload = async (files) => {
-    console.log(`Starting upload of ${files.length} files...`);
-    const newUploads = files.map(file => ({
-      name: file.name,
-      progress: 0,
-      status: 'uploading'
-    }));
-    setUploadQueue(prev => [...prev, ...newUploads]);
-
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-      if (folderId) formData.append("parent_id", folderId);
-
-      try {
-        await api.post("/files/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setUploadQueue(prev => prev.map(item =>
-                item.name === file.name ? { ...item, progress: percent } : item
-              ));
-            }
-          }
-        });
-
-        setUploadQueue(prev => prev.filter(item => item.name !== file.name));
-        fetchItems();
-
-      } catch (error) {
-        console.error("Upload failed", error);
-        setUploadQueue(prev => prev.map(item =>
-          item.name === file.name ? { ...item, status: 'error' } : item
-        ));
-        setTimeout(() => {
-          setUploadQueue(prev => prev.filter(item => item.name !== file.name));
-        }, 3000);
-      }
-    }
-  };
+  // Removed handleFileUpload as its logic is now in UploadContext
 
   const handleRename = async () => {
     fetchItems();
@@ -217,7 +186,7 @@ const FileList = ({
           <h2 className="text-lg font-medium text-slate-700">
             {isTrash ? "Trash is empty" : "No results found"}
           </h2>
-          {!isTrash && <p className="text-slate-400 text-sm mt-2">Drag and drop files here to upload</p>}
+          {!isTrash && !isDragging && <p className="text-slate-400 text-sm mt-2">Drag and drop files here to upload</p>}
         </div>
       );
     }
@@ -238,55 +207,19 @@ const FileList = ({
 
   // ✅ MAIN RENDER: The Wrapper Div handles Drag Events for the WHOLE area
   return (
-    <div
-      className="relative min-h-[80vh] h-full w-full outline-none"
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="relative min-h-[80vh] h-full w-full outline-none">
 
       {/* 1. Content (Grid, Loading, or Empty State) */}
       {renderContent()}
 
-      {/* 2. Drag Overlay (Shows when dragging) */}
-      {isDragging && (
-        <div className="fixed inset-0 bg-blue-600/10 backdrop-blur-[2px] border-4 border-dashed border-blue-500 z-[100] flex items-center justify-center pointer-events-none transition-all duration-300">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center scale-110">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-5xl">📤</span>
-            </div>
-            <p className="text-blue-600 font-bold text-2xl">Drop files to upload</p>
-            <p className="text-slate-400 mt-2">Your files will be added to this folder</p>
-          </div>
-        </div>
-      )}
+      {/* Infinite Scroll Trigger */}
+      <div ref={observerTarget} className="h-10 w-full flex items-center justify-center mt-4">
+        {loading && page > 1 && (
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        )}
+      </div>
 
-      {/* 3. Upload Progress Toast */}
-      {uploadQueue.length > 0 && (
-        <div className="fixed bottom-6 right-6 bg-white shadow-2xl rounded-xl p-0 w-80 z-[100] border border-slate-200 overflow-hidden animate-in slide-in-from-bottom duration-300">
-          <div className="bg-slate-900 text-white px-4 py-3 flex justify-between items-center">
-            <h4 className="font-medium text-sm">Uploading {uploadQueue.length} items</h4>
-            <div className="flex gap-2">
-              <div className="animate-spin rounded-full h-3 w-3 border-2 border-slate-400 border-t-white"></div>
-            </div>
-          </div>
-          <div className="max-h-60 overflow-y-auto p-4 bg-white">
-            {uploadQueue.map((item, idx) => (
-              <div key={idx} className="mb-4 last:mb-0">
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="truncate w-40 text-slate-700 font-medium">{item.name}</span>
-                  <span className="text-slate-500">{item.status === 'error' ? '❌ Failed' : `${item.progress}%`}</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-300 ${item.status === 'error' ? 'bg-red-500' : 'bg-blue-600'}`}
-                    style={{ width: `${item.progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* 4. Rename Modal */}
       <RenameModal

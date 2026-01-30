@@ -18,15 +18,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { HardDrive, Share2, Trash2, Plus, LogOut } from "lucide-react";
-import UploadModel from "./uploadmodel";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useFolder } from "../context/FolderContext";
+import { useUpload } from "../context/UploadContext"; // ✅ ADDED
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const fileInputRef = useRef(null); // ✅ ADDED
   const { currentFolderId } = useFolder() || {};
+  const { uploadFiles } = useUpload(); // ✅ ADDED
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -62,12 +63,23 @@ export default function Sidebar() {
 
         {/* New Button Area */}
         <div className="px-4 mb-6">
+          <input
+            type="file"
+            multiple
+            className="hidden"
+            ref={fileInputRef}
+            onChange={(e) => {
+              if (e.target.files?.length) {
+                uploadFiles(e.target.files, currentFolderId);
+              }
+            }}
+          />
           <button
-            onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-3 px-5 py-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 text-slate-700 font-medium group"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-3 px-6 py-3 bg-white border border-slate-200 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-slate-700 font-medium group w-fit min-w-[120px]"
           >
             <Plus className="w-6 h-6 text-blue-600 group-hover:scale-110 transition-transform" />
-            <span>New</span>
+            <span className="pr-2">New</span>
           </button>
         </div>
 
@@ -78,8 +90,8 @@ export default function Sidebar() {
               key={item.path}
               href={item.path}
               className={`flex items-center gap-4 px-4 py-2.5 rounded-full transition-all duration-200 ${isActive(item.path)
-                  ? "bg-blue-100 text-blue-700 font-medium"
-                  : "text-slate-600 hover:bg-slate-200/50"
+                ? "bg-blue-100 text-blue-700 font-medium"
+                : "text-slate-600 hover:bg-slate-200/50"
                 }`}
             >
               <item.icon className={`w-5 h-5 ${isActive(item.path) ? "text-blue-700" : "text-slate-500"}`} />
@@ -99,12 +111,6 @@ export default function Sidebar() {
           </button>
         </div>
       </aside>
-
-      <UploadModel
-        isOpen={isUploadOpen}
-        onClose={() => setIsUploadOpen(false)}
-        folderId={currentFolderId}
-      />
     </>
   );
 }

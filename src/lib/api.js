@@ -83,15 +83,21 @@ const api = {
 
         // Handle Response
         xhr.onload = () => {
+          let response;
           try {
-            const response = JSON.parse(xhr.responseText);
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve(response);
-            } else {
-              reject(new Error(response.message || response.error || "Upload failed"));
-            }
+            // Only parse if there's actually a response text
+            response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
           } catch (e) {
-            reject(new Error("Invalid server response"));
+            // If parsing fails (e.g. server sent HTML error), show status code
+            return reject(new Error(`Server Error: ${xhr.status} ${xhr.statusText || "Invalid Response"}`));
+          }
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(response);
+          } else {
+            // Use server message if available, otherwise generic
+            const errorMsg = response.message || response.error || `Upload failed (${xhr.status})`;
+            reject(new Error(errorMsg));
           }
         };
 

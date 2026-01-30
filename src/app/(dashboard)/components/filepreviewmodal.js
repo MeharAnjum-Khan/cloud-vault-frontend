@@ -3,199 +3,209 @@
  *
  * Purpose of this file:
  * - Displays a full-screen modal overlay when a user double-clicks a file.
- * - Intelligently renders content based on file type:
- * 1. Images (jpg, png, gif) -> Standard <img> tag
- * 2. PDFs -> Embed using <iframe />
- * 3. Text/Code (txt, js, json) -> Simple text display
- * 4. Others (zip, exe) -> "No Preview Available" message with Download button
- * - Follows Google Drive's dark overlay style.
+ * - Intelligently renders content based on file type (Images, PDFs, Text).
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import {
+  X,
+  Download,
+  File as FileIcon,
+  FileText,
+  Image as ImageIcon,
+  AlertCircle,
+  Loader2
+} from "lucide-react";
+
+/**
+ * Helper to determine file type category
+ */
+const getFileType = (fileName) => {
+  const ext = fileName.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+  if (['pdf'].includes(ext)) return 'pdf';
+  if (['txt', 'md', 'json', 'js', 'css', 'html'].includes(ext)) return 'text';
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) return 'office';
+  return 'unknown';
+};
 
 const FilePreviewModal = ({ file, isOpen, onClose }) => {
-  // State to store the signed URL fetched from backend
   const [fileUrl, setFileUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [textContent, setTextContent] = useState("");
 
-  // Fetch signed URL when modal opens
+  const fileType = file ? getFileType(file.name) : 'unknown';
+
   useEffect(() => {
     if (!isOpen || !file) return;
 
-    const fetchSignedUrl = async () => {
+    const fetchPreview = async () => {
       try {
         setLoading(true);
         setError(null);
-        // Call backend to get signed download URL
-        const response = await api.get(`/files/${file.id}/download`);
-        setFileUrl(response.downloadUrl);
+        setTextContent("");
+
+        // 1. Get signed URL
+        const data = await api.get(`/files/${file.id}/download`);
+        const { downloadUrl } = data;
+        setFileUrl(downloadUrl);
+
+        // 2. Fetch text content if needed
+        if (fileType === 'text') {
+          try {
+            const textRes = await fetch(downloadUrl);
+            const text = await textRes.text();
+            setTextContent(text);
+          } catch (err) {
+            console.error("Text fetch error:", err);
+            setTextContent("Failed to load text content.");
+          }
+        }
       } catch (err) {
-        console.error("Failed to fetch file URL:", err);
-        setError("Failed to load file preview");
+        console.error("Preview load error:", err);
+        setError("Unable to load preview.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSignedUrl();
-  }, [file, isOpen]);
+    fetchPreview();
+  }, [file, isOpen, fileType]);
 
-  // Close modal on ESC key press
-  useEffect(() => {
-    if (!isOpen || !file) return;
-
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, file, onClose]);
-
-  // If modal is closed or no file is selected, render nothing
-  if (!isOpen || !file) return null;
-
-  // Determine file type category based on extension or mime type
-  const getFileType = (fileName) => {
-    const ext = fileName.split('.').pop().toLowerCase();
-
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
-    if (['pdf'].includes(ext)) return 'pdf';
-    if (['txt', 'md', 'json', 'js', 'css', 'html'].includes(ext)) return 'text';
-    return 'unknown';
+  const handleDownload = async () => {
+    if (!fileUrl) return;
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', file.name);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Manual download failed:", err);
+      // Fallback: search for standard download
+      window.open(fileUrl, '_blank');
+    }
   };
 
-  const fileType = getFileType(file.name);
+  // ESC key support
+  useEffect(() => {
+    const handleKeyDown = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  if (!isOpen || !file) return null;
 
   return (
-    // 1. Overlay Container (Dark semi-transparent background)
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      onClick={onClose} // Clicking outside closes the modal
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4 animate-in fade-in duration-300"
+      onClick={onClose}
     >
-
-      {/* 2. Main Modal Content Wrapper */}
       <div
-        className="relative w-full max-w-5xl h-[85vh] bg-white rounded-lg overflow-hidden flex flex-col shadow-2xl"
-        onClick={(e) => e.stopPropagation()} // Prevent click from closing modal
+        className="relative w-full max-w-5xl h-full max-h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
       >
-
-        {/* --- Header: File Name + Actions --- */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 bg-white text-slate-800 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            {/* File Icon (Simple unicode fallback) */}
-            <span className="text-xl">📄</span>
-            <h2 className="text-sm font-medium truncate max-w-md" title={file.name}>
-              {file.name}
-            </h2>
+            <div className="p-2 bg-slate-50 rounded-lg">
+              {fileType === 'image' ? <ImageIcon className="w-5 h-5 text-purple-600" /> :
+                fileType === 'pdf' ? <FileText className="w-5 h-5 text-red-600" /> :
+                  <FileIcon className="w-5 h-5 text-blue-600" />}
+            </div>
+            <h2 className="text-base font-semibold truncate max-w-md text-slate-700">{file.name}</h2>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Download Button */}
-            <a
-              href={fileUrl || '#'}
-              download
-              className="text-slate-300 hover:text-white transition-colors"
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.open(fileUrl, '_blank')}
+              className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-500 hover:text-indigo-600"
+              title="Open in new tab"
+            >
+              <FileIcon size={18} />
+            </button>
+            <button
+              onClick={handleDownload}
+              className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-500 hover:text-indigo-600"
               title="Download"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </a>
-
-            {/* Close Button */}
+              <Download size={20} />
+            </button>
             <button
               onClick={onClose}
-              className="text-slate-300 hover:text-white transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-500 hover:text-red-600"
+              title="Close"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <X size={24} />
             </button>
           </div>
         </div>
 
-        {/* --- Body: Content Viewer --- */}
-        <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-auto p-4 relative">
-
-          {/* Loading State */}
+        {/* Body */}
+        <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden p-4 relative">
           {loading && (
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600 mx-auto mb-4"></div>
-              <p className="text-slate-500">Loading preview...</p>
+            <div className="flex flex-col items-center">
+              <Loader2 className="w-12 h-12 text-slate-400 animate-spin mb-4" />
+              <p className="text-slate-500 font-medium font-sans">Generating preview...</p>
             </div>
           )}
 
-          {/* Error State */}
           {error && (
-            <div className="text-center">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
-                ❌
-              </div>
-              <h3 className="text-lg font-medium text-slate-700">{error}</h3>
-              <p className="text-slate-500 mb-6">Please try again later.</p>
+            <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-200">
+              <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-800 mb-2">{error}</h3>
+              <p className="text-slate-500 mb-6">You can still download the file to view it locally.</p>
+              <button onClick={onClose} className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">Close</button>
             </div>
           )}
 
-          {/* File Content (only show when loaded) */}
-          {!loading && !error && fileUrl && (
-            <>
-              {/* A. IMAGE VIEWER */}
+          {!loading && !error && (
+            <div className="w-full h-full flex items-center justify-center">
               {fileType === 'image' && (
-                <img
-                  src={fileUrl}
-                  alt={file.name}
-                  className="max-w-full max-h-full object-contain shadow-md rounded"
-                />
+                <img src={fileUrl} alt={file.name} className="max-w-full max-h-full object-contain shadow-sm rounded-lg" />
               )}
 
-              {/* B. PDF VIEWER (Using Browser Native Embed) */}
               {fileType === 'pdf' && (
-                <iframe
-                  src={`${fileUrl}#toolbar=0`}
-                  className="w-full h-full border-none rounded bg-white shadow-sm"
-                  title="PDF Preview"
-                />
+                <iframe src={`${fileUrl}#toolbar=0`} className="w-full h-full border-none rounded-lg bg-white shadow-inner" title="PDF" />
               )}
 
-              {/* C. TEXT VIEWER (Fallback for code/txt) */}
               {fileType === 'text' && (
-                <div className="bg-white p-8 shadow-sm rounded max-w-2xl w-full h-full overflow-auto">
-                  <p className="text-slate-500 text-sm mb-4">Text Preview:</p>
-                  {/* Note: This assumes public access or signed URL logic handles CORS correctly */}
-                  <iframe
-                    src={fileUrl}
-                    className="w-full h-full border-none font-mono text-sm"
-                    sandbox
-                  />
+                <div className="w-full h-full bg-slate-50 p-8 overflow-auto rounded-lg border border-slate-200 shadow-inner">
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-slate-700 leading-relaxed">{textContent}</pre>
                 </div>
               )}
 
-              {/* D. UNKNOWN FILE TYPE (Fallback) */}
+              {fileType === 'office' && (
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`}
+                  className="w-full h-full border-none rounded-lg bg-white shadow-inner"
+                  title="Office Document"
+                />
+              )}
+
               {fileType === 'unknown' && (
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
-                    &quest;
+                <div className="text-center p-12 bg-white rounded-3xl shadow-xl max-w-md">
+                  <div className="w-24 h-24 bg-slate-50 text-slate-400 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <FileIcon size={48} />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-700">No Preview Available</h3>
-                  <p className="text-slate-500 mb-6 max-w-xs mx-auto">
-                    We can&apos;t preview this file type directly in the browser.
-                  </p>
-                  <a
-                    href={fileUrl}
-                    download
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Download File
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2">No Preview Available</h3>
+                  <p className="text-slate-500 mb-8 leading-relaxed">We can&apos;t display a preview for this file type in the browser.</p>
+                  <a href={fileUrl} download className="inline-flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+                    <Download size={18} /> Download
                   </a>
                 </div>
               )}
-            </>
+            </div>
           )}
-
         </div>
       </div>
     </div>
